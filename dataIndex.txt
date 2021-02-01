@@ -1,0 +1,76 @@
+Spotify Project
+	- Fleshed out Billboard Data of Top 20
+	- Updating Radar Graphs Comparing the Top Songs to Aggregates of Spotify Attributes in the Large Data Set and Those Billboard songs where this is available
+	- Star of the Show: Horse Race Graph
+		- Week by Week Transition of the Top Twenty Songs
+		- Need to make the Lines less Messy (fade away once week position > 20) 	
+	- On the Righthand Side:
+		- Radar Graphs that show 5-7 of the best attributes for all songs in that year and songs available in the top 100 and top 20 songs
+		- When there is a hover above a current Top 20 Song: Update all radars for that
+	
+	- Other Pages:
+		- How Data was Obtained
+		- How Data is structured: DB Graph
+		- Sample Page of the Data
+		- Conclusions of the Data
+			- Are their true Meaningful differences in spotify quant attributes b/w popular songs (Top 20), semi-popular (21-100) and
+			the rest of the songs I have available?
+			- K-means Test for Genres of Popular Songs and the rest of the avaible catalogue.
+
+
+	- What Does the Data the Look Like?
+		- We have 2 sources of Data: Billboard Top 100 data for Songs that charted from 1999 to 2019
+			- From the Spotify API, we have quantifiable attributes that describe the song:
+				1. String information:
+					a. Song - The string name of the song
+					b. Performer - The Artist(s) involved in the Song
+					c. SongID - A String Mashup of the Song name and the Performer's Name to properly use as keys to join on with the attribute data
+				
+				2. Information corresponding to Hot100 position in the week:
+					a. WeekID --> Datetime of current billboard week
+					b. Week Postion --> The Hot100 Position for that Current Week 
+					c. Peak Position --> The Highest Position on the Hot100 that this song has climbed as of this week
+					d. Weeks on Chart --> How long has the Song been on the chart. With 1 corresponding to song's first week on the chart
+					e. Instance --> Numerical Counter Indicating whether a Song Returned to the Billboard Hot 100 after previously falling off.
+				
+				3. Numerical Data corresponding to the song (audioFeatures.csv)
+					aa. Other Features:
+						 - SongID - Song+Artist unique identifier.
+						 - Performer - Performer(s) of the Song
+						 - Song - Song Title
+						 - spotify_genre: an Array of genre classifiers (comma separted)
+						 - spotify_track_id: Spotify's hash track identifier
+						 - spotify_track_preview_url: Url to a snippet of the track
+						 - spotify_track_album: Corresponding album (or single) to this song
+						 - spotify_track_explicit: True/False value for if the given song contains profanity
+						 - spotify_track_duration_ms: Float of Milliseconds of given track
+						 - spotify_track_popularity: 0-100 Integer metric corresponding to the popularity of the track on Spotify's Platform
+					ab. Quants:
+						a. Danceability --> FLOAT.  describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+						b. Energy -->FLOAT. a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
+						c. Key --> INTEGER. The key the track is in. Integers map to pitches using standard Pitch Class notation . E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on.
+						d. Loudness --> FLOAT. loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
+						e. Mode --> INTEGER. Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+						f. Speechiness --> FLOAT. detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
+						g. Acousticness --> FLOAT. Float (0.0 - 1.0). Confidence Measure the Track is Acoustic. 
+						h. Instrumentalness --> FLOAT. Predicts whether a track contains no vocals. “Ooh” and “aah” sounds are treated as instrumental in this context. Rap or spoken word tracks are clearly “vocal”. The closer the instrumentalness value is to 1.0, the greater likelihood the track contains no vocal content. Values above 0.5 are intended to represent instrumental tracks, but confidence is higher as the value approaches 1.0.
+						i. Liveness --> FLOAT. Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+						j. Valence --> FLOAT . A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+						k. Tempo --> FLOAT . The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+						l. Time_signature --> INTEGER. An estimated overall time signature of a track. The time signature (meter) is a notational convention to specify how many beats are in each bar (or measure).
+					ac. Other Quants I have:
+						a. Danceability
+						b. Duration --> Time in ms
+						c. Energy
+						d. explicit
+						e. instrumentalness
+						f. liveness
+						g. loudness
+						h. mode 
+						i. popularity 
+						j. speechiness
+						k. tempo
+						l. timesignature
+						m. valence
+
+
