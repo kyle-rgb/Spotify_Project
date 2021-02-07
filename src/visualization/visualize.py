@@ -1,8 +1,9 @@
 # Bring in Dependencies
 import pandas as pd, numpy as np, datetime as dt
-import pymongo
+import pymongo, os
 import json
 import flask
+from flask import url_for
 import sqlalchemy as sql
 from flask_cors import CORS, cross_origin
 from workdata import manipulate_data
@@ -39,6 +40,7 @@ def get_data():
 def draw_graph():
     year = flask.request.args["year"]
     #pivotJSON = json.dumps(pivotJSON, ensure_ascii=True)
+    print(os.getcwd())
     return flask.render_template("jsontest.html", pyyear=year)
 
 if __name__ == "__main__":

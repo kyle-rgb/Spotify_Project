@@ -7,12 +7,18 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta http-equiv="Content-Language" content="en" />
     <title>Hot 100</title>
+    <script src="{{url_for('static', filename='radarChart.js')}}"></script>	
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.13.0/d3-legend.min.js"></script>
     <link href="http://fonts.googleapis.com/css?family=Dosis:400,500,700" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300" rel='stylesheet' type='text/css'>
+		<link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+    
+
+
 </head>
 
 
@@ -187,13 +193,77 @@ path:hover{
     <li role="presentation" class="nav-item nav-link btn" id="byYear"><b>By Year</b></li>
     <li role="presentation" class="nav-item nav-link btn" id="byPop"><b>By Popularity</b></li>
   </ul>
+  <div class="radarChart"></div>
 </div>
 </div>
 <script src="https://d3js.org/d3.v3.js"></script>
 
 <script>
+
 function loadRadars(d){
   d3.select("#radars").style("opacity", 1)
+  var margin = {top: 100, right: 100, bottom: 100, left: 100},
+				width = Math.min(700, window.innerWidth - 10) - margin.left - margin.right,
+				height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+					
+			////////////////////////////////////////////////////////////// 
+			////////////////////////// Data ////////////////////////////// 
+			////////////////////////////////////////////////////////////// 
+
+			var data = [
+					  [//iPhone
+						{axis:"Battery Life",value:0.22},
+						{axis:"Brand",value:0.28},
+						{axis:"Contract Cost",value:0.29},
+						{axis:"Design And Quality",value:0.17},
+						{axis:"Have Internet Connectivity",value:0.22},
+						{axis:"Large Screen",value:0.02},
+						{axis:"Price Of Device",value:0.21},
+						{axis:"To Be A Smartphone",value:0.50},
+            {axis: "Speechiness", value: 0.55},
+            {axis: "Loudness", value: 0.42}		
+					  ],[//Samsung
+						{axis:"Battery Life",value:0.27},
+						{axis:"Brand",value:0.16},
+						{axis:"Contract Cost",value:0.35},
+						{axis:"Design And Quality",value:0.13},
+						{axis:"Have Internet Connectivity",value:0.20},
+						{axis:"Large Screen",value:0.13},
+						{axis:"Price Of Device",value:0.35},
+						{axis:"To Be A Smartphone",value:0.38},
+            {axis: "Speechiness", value: 0.23},
+            {axis: "Loudness", value: 0.22}
+
+					  ],[//Nokia Smartphone
+						{axis:"Battery Life",value:0.26},
+						{axis:"Brand",value:0.10},
+						{axis:"Contract Cost",value:0.30},
+						{axis:"Design And Quality",value:0.14},
+						{axis:"Have Internet Connectivity",value:0.22},
+						{axis:"Large Screen",value:0.04},
+						{axis:"Price Of Device",value:0.41},
+						{axis:"To Be A Smartphone",value:0.30},
+            {axis: "Speechiness", value: 0.44},
+            {axis: "Loudness", value: 0.12}
+					  ]
+					];
+			////////////////////////////////////////////////////////////// 
+			//////////////////// Draw the Chart ////////////////////////// 
+			////////////////////////////////////////////////////////////// 
+
+			var color = d3.scale.ordinal()
+				.range(["#EDC951","#CC333F","#00A0B0"]);
+				
+			var radarChartOptions = {
+			  w: width,
+			  h: height,
+			  margin: margin,
+			  maxValue: 0.5,
+			  levels: 5,
+			  roundStrokes: true,
+			  color: color
+			};
+  return [data, radarChartOptions]
 };
 
 
@@ -229,6 +299,11 @@ var xAxis = d3.svg.axis()
 
 var xtickLabels = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10" , "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26",
                   "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52"]
+
+if (data.length > 52){
+  xtickLabels.push("53")
+}
+
 
 xAxis.tickFormat(function(d,i){
     return xtickLabels[i]
@@ -297,6 +372,9 @@ var clip = svg.append("clipPath")
   console.log(candidates)//.slice(-1))
 
   x.domain([1, 52]);
+if (data.length > 52){
+  x.domain([1, 53])
+}
 
 
   y.domain([
@@ -466,11 +544,11 @@ var round = candidates.append("circle")
     .delay(2000)
     .duration(speed)
     .each("start", function start() {     
-          
+    try{      
       label.transition()
         .duration(speed)
         .ease('linear')
-      .attr("transform", function(d) { return "translate(" + (x(d.values[week].week) + 20) + "," + (y(d.values[week].rank)) + ")"; })
+      .attr("transform", function(d) {return "translate(" + (x(d.values[week].week) + 20) + "," + (y(d.values[week].rank)) + ")";})
       .text(function(d) { return  d.name.slice(0, -1); });
 
       ranking.transition()
@@ -507,20 +585,24 @@ var round = candidates.append("circle")
          .attr("transform",function(d) { return "translate(" + (x(d.values[week].week) ) + "," + (y(1)-15) + ") rotate(-30)"; })
 
       
-      loadRadars();
-      
       if (!paused){
         week+=1;
       } else {
-        transition = transition.transition().each("start", week)
+        return -1;
       }
 
 
       if (week !== data[0].length){
-
-        transition = transition.transition().each("start", start);}     
-      });
-
+        transition = transition.transition().each("start", start);
+      }     
+      
+    } catch (error){ console.log(error)
+    } finally {
+      return -1
+    }
+  
+  });
+  
 
     $(".songname").on("click",function(){
       var nameOfCandidate = $(this).text();
@@ -559,18 +641,7 @@ var round = candidates.append("circle")
 }
 
 </script>
-<div class="col-md-2">
-  
-  <!--<div class="box" style="margin-right: 300px">
-  <b>Some Text</b>
-  
-  </div>-
-    
-    <svg width="1200" height="6000" style="margin-right: 1300px">
-      <rect width="600" height="8000"></rect>
-    </svg> -->
-  
-</div>
+
 </div>
 </div>
 
@@ -582,6 +653,8 @@ var round = candidates.append("circle")
 <script>
 let wantedYear = parseInt({{pyyear}})
 drawGraphics(wantedYear, 1)
+array = loadRadars();
+RadarChart(".radarChart", array[0], array[1]);
 
 d3.select("#replay")
     .on("click", function(){
