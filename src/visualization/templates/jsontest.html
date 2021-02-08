@@ -8,7 +8,7 @@
     <meta http-equiv="Content-Language" content="en" />
     <title>Hot 100</title>
     <script src="{{url_for('static', filename='radarChart.js')}}"></script>	
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
@@ -125,6 +125,11 @@ path:hover{
   border: 2px solid;
 }
 
+.form-check-inline{
+  display: inline-block;
+  margin-left: 12px;
+}
+
 #radars{
   opacity: 0;
 }
@@ -193,12 +198,39 @@ path:hover{
     <li role="presentation" class="nav-item nav-link btn" id="byYear"><b>By Year</b></li>
     <li role="presentation" class="nav-item nav-link btn" id="byPop"><b>By Popularity</b></li>
   </ul>
+  <br>
+  <div class="check_genre"></div>
   <div class="radarChart"></div>
+  
 </div>
 </div>
 <script src="https://d3js.org/d3.v3.js"></script>
 
 <script>
+function colorFilter_str(d){
+    if (d.Top_Genre == "reggae") {
+          return "#e377c2"; // Reggae 
+      } else if (d.Top_Genre == "electronic") {
+          return "#ffbb78"; // Electronic
+      } else if (d.Top_Genre == "latin"){
+        return "#8c564b"; // Latin
+      } else if (d.Top_Genre == "r&amp;b"){
+        return "#ce3b69"; // R & B
+      } else if (d.Top_Genre == "pop"){
+        return "#9467bd"; // Pop 
+      } else if (d.Top_Genre == "country"){
+          return "#ff7f0e"; // Country 
+    } else if (d.Top_Genre == "hip-hop"){
+          return "#2ca02c"; // Hip-Hop 
+    } else if (d.Top_Genre == "rock"){
+          return "#17becf"; // Rock
+    } else if (d.Top_Genre == "alternative"){
+          return "#bcbd22"; // "Alternative"
+    } else {
+          return "#d62728" // "Other"
+    }
+}
+
 
 function loadRadars(d){
   d3.select("#radars").style("opacity", 1)
@@ -208,51 +240,49 @@ function loadRadars(d){
 					
 			////////////////////////////////////////////////////////////// 
 			////////////////////////// Data ////////////////////////////// 
-			////////////////////////////////////////////////////////////// 
+			//////////////////////////////////////////////////////////////
+  var axis_data = []
+  var data_array = []
+    {% for obj in radar_json %}
+    data_array.push({
+    {% for k,v in obj.items()  %}
+        "{{ k }}": "{{ v }}",  
+    {% endfor %}
+    })
+    {% endfor %}
 
-			var data = [
-					  [//iPhone
-						{axis:"Battery Life",value:0.22},
-						{axis:"Brand",value:0.28},
-						{axis:"Contract Cost",value:0.29},
-						{axis:"Design And Quality",value:0.17},
-						{axis:"Have Internet Connectivity",value:0.22},
-						{axis:"Large Screen",value:0.02},
-						{axis:"Price Of Device",value:0.21},
-						{axis:"To Be A Smartphone",value:0.50},
-            {axis: "Speechiness", value: 0.55},
-            {axis: "Loudness", value: 0.42}		
-					  ],[//Samsung
-						{axis:"Battery Life",value:0.27},
-						{axis:"Brand",value:0.16},
-						{axis:"Contract Cost",value:0.35},
-						{axis:"Design And Quality",value:0.13},
-						{axis:"Have Internet Connectivity",value:0.20},
-						{axis:"Large Screen",value:0.13},
-						{axis:"Price Of Device",value:0.35},
-						{axis:"To Be A Smartphone",value:0.38},
-            {axis: "Speechiness", value: 0.23},
-            {axis: "Loudness", value: 0.22}
 
-					  ],[//Nokia Smartphone
-						{axis:"Battery Life",value:0.26},
-						{axis:"Brand",value:0.10},
-						{axis:"Contract Cost",value:0.30},
-						{axis:"Design And Quality",value:0.14},
-						{axis:"Have Internet Connectivity",value:0.22},
-						{axis:"Large Screen",value:0.04},
-						{axis:"Price Of Device",value:0.41},
-						{axis:"To Be A Smartphone",value:0.30},
-            {axis: "Speechiness", value: 0.44},
-            {axis: "Loudness", value: 0.12}
-					  ]
-					];
+  data_array.forEach((d) => {
+    let chart_data_arr = []
+    let keys = Object.keys(d)
+    let values = Object.keys(d)
+    let ggenre = d.Top_Genre
+    ggenre = ggenre.replace("&amp;", "&")
+    ggenre = ggenre.toUpperCase()
+    div_a = d3.select(".check_genre").append("div").attr("class", "form-check form-check-inline")
+    div_a.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("value", ggenre.replace("&", "")).attr("id", `${ggenre.replace("&", "")}CheckDefault`).attr("checked", true)
+    div_a.append("label").attr("class", "form-check-label").attr("for", `${ggenre}CheckDefault`).text(ggenre)
+    for (key of keys){
+      if(key !== "Top_Genre"){
+        chart_data_arr.push({axis: key, value: (+d[key]).toFixed(3), genre: ggenre})
+        
+      }
+    }
+    axis_data.push(chart_data_arr)
+
+  })
+  
+
+      var data = axis_data;
+			
 			////////////////////////////////////////////////////////////// 
 			//////////////////// Draw the Chart ////////////////////////// 
 			////////////////////////////////////////////////////////////// 
+      var color_range_array = []
+      data_array.forEach((d) => { color_range_array.push(colorFilter_str(d))})
 
 			var color = d3.scale.ordinal()
-				.range(["#EDC951","#CC333F","#00A0B0"]);
+				.range(color_range_array);
 				
 			var radarChartOptions = {
 			  w: width,
@@ -652,9 +682,11 @@ var round = candidates.append("circle")
 
 <script>
 let wantedYear = parseInt({{pyyear}})
+// var radar_data = {{ radar_json }}  // list of objects in the form of [{Top_Genre: "data", "attribute": value}] = Genre 1 the first genre
 drawGraphics(wantedYear, 1)
 array = loadRadars();
 RadarChart(".radarChart", array[0], array[1]);
+
 
 d3.select("#replay")
     .on("click", function(){
@@ -663,6 +695,26 @@ d3.select("#replay")
 
 d3.select("#pause").on("click", function(){
   paused = !paused;
+})
+
+d3.selectAll(".form-check-input").on("click", function(d){
+  console.log(this.value)
+  console.log(this.checked)
+  // if this.checked == false -> get this.value + _radarWrapper & _circleWrapper
+  if (this.checked == false){
+    d3.select(`#${this.value}_radarwrapper`).style("opacity", 0)
+    d3.select(`#${this.value}_circlewrapper`).style("opacity", 0)
+  } else {
+    d3.select(`#${this.value}_radarwrapper`).style("opacity", 0.7)
+    d3.select(`#${this.value}_circlewrapper`).style("opacity", 0.7)
+  }
+  
+
+
+
+
+
+
 })
 
 function newYear(yearG){

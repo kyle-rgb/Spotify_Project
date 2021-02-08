@@ -28,7 +28,7 @@ function RadarChart(id, data, options) {
 		if('undefined' !== typeof options[i]){ cfg[i] = options[i]; }
 	  }//for i
 	}//if
-	
+
 	//If the supplied maxValue is smaller than the actual one, replace by the max in the data
 	var maxValue = Math.max(cfg.maxValue, d3.max(data, function(i){return d3.max(i.map(function(o){return o.value;}))}));
 		
@@ -149,8 +149,10 @@ function RadarChart(id, data, options) {
 	//Create a wrapper for the blobs	
 	var blobWrapper = g.selectAll(".radarWrapper")
 		.data(data)
-		.enter().append("g")
-		.attr("class", "radarWrapper");
+		.enter()
+		.append("g")
+		.attr("class", "radarWrapper")
+		.attr("id", function(d,i){ return ((d[0].genre == "R&B") ? "RB" : d[0].genre) + "_radarwrapper" });
 			
 	//Append the backgrounds	
 	blobWrapper
@@ -167,7 +169,9 @@ function RadarChart(id, data, options) {
 			//Bring back the hovered over blob
 			d3.select(this)
 				.transition().duration(200)
-				.style("fill-opacity", 0.7);	
+				.style("fill-opacity", 0.7);
+			
+				
 		})
 		.on('mouseout', function(){
 			//Bring back all blobs
@@ -175,7 +179,7 @@ function RadarChart(id, data, options) {
 				.transition().duration(200)
 				.style("fill-opacity", cfg.opacityArea);
 		});
-		
+
 	//Create the outlines	
 	blobWrapper.append("path")
 		.attr("class", "radarStroke")
@@ -204,7 +208,8 @@ function RadarChart(id, data, options) {
 	var blobCircleWrapper = g.selectAll(".radarCircleWrapper")
 		.data(data)
 		.enter().append("g")
-		.attr("class", "radarCircleWrapper");
+		.attr("class", "radarCircleWrapper")
+		.attr("id", function(d,i){ return ((d[0].genre == "R&B") ? "RB" : d[0].genre)  + "_circlewrapper"});
 		
 	//Append a set of invisible circles on top for the mouseover pop-up
 	blobCircleWrapper.selectAll(".radarInvisibleCircle")
@@ -240,6 +245,9 @@ function RadarChart(id, data, options) {
 	/////////////////////////////////////////////////////////
 	/////////////////// Helper Function /////////////////////
 	/////////////////////////////////////////////////////////
+
+	
+
 
 	//Taken from http://bl.ocks.org/mbostock/7555321
 	//Wraps SVG text	
