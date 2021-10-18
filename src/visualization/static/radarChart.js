@@ -49,7 +49,10 @@ function RadarChart(id, data, options) {
 
 	//Remove whatever chart with the same id/class was present before
 	d3.select(id).select("svg").remove();
-	
+	//  THIS
+	d3.select(id).attr("width",  cfg.w + cfg.margin.left + cfg.margin.right)
+	.attr("height", cfg.h + cfg.margin.top + cfg.margin.bottom)
+
 	//Initiate the radar chart SVG
 	var svg = d3.select(id).append("svg")
 			.attr("width",  cfg.w + cfg.margin.left + cfg.margin.right)
@@ -167,10 +170,11 @@ function RadarChart(id, data, options) {
 				.transition().duration(200)
 				.style("fill-opacity", 0.1); 
 			//Bring back the hovered over blob
-			d3.select(this)
+			let r = this.parentNode.id
+			d3.selectAll(".radarArea")[0].filter(function(d) { return d.parentNode.id === r})
 				.transition().duration(200)
 				.style("fill-opacity", 0.7);
-			
+		
 				
 		})
 		.on('mouseout', function(){

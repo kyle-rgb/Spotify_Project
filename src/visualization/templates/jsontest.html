@@ -134,6 +134,18 @@ path:hover{
   opacity: 0;
 }
 
+div .radarChart{
+  width:min-content;
+  height:max-content;
+  display:inline-flex;
+}
+
+div .radarChart2{
+  width:min-content;
+  height:max-content;
+  display:inline-flex;
+}
+
 </style>
 
 
@@ -201,6 +213,7 @@ path:hover{
   <br>
   <div class="check_genre"></div>
   <div class="radarChart"></div>
+  <div class="radarChart2"></div>
   
 </div>
 </div>
@@ -232,7 +245,7 @@ function colorFilter_str(d){
 }
 
 
-function loadRadars(d){
+function loadRadars(data_array){
   d3.select("#radars").style("opacity", 1)
   var margin = {top: 100, right: 100, bottom: 100, left: 100},
 				width = Math.min(700, window.innerWidth - 10) - margin.left - margin.right,
@@ -242,15 +255,6 @@ function loadRadars(d){
 			////////////////////////// Data ////////////////////////////// 
 			//////////////////////////////////////////////////////////////
   var axis_data = []
-  var data_array = []
-    {% for obj in radar_json %}
-    data_array.push({
-    {% for k,v in obj.items()  %}
-        "{{ k }}": "{{ v }}",  
-    {% endfor %}
-    })
-    {% endfor %}
-
 
   data_array.forEach((d) => {
     let chart_data_arr = []
@@ -567,7 +571,6 @@ var round = candidates.append("circle")
 
   
 
-
   var week = startWeek;
 
   var transition = d3.transition()
@@ -682,10 +685,18 @@ var round = candidates.append("circle")
 
 <script>
 let wantedYear = parseInt({{pyyear}})
-// var radar_data = {{ radar_json }}  // list of objects in the form of [{Top_Genre: "data", "attribute": value}] = Genre 1 the first genre
 drawGraphics(wantedYear, 1)
-array = loadRadars();
+var data_array = []
+    {% for obj in radar_json %}
+    data_array.push({
+    {% for k,v in obj.items()  %}
+        "{{ k }}": "{{ v }}",  
+    {% endfor %}
+    })
+    {% endfor %}
+array = loadRadars(data_array);
 RadarChart(".radarChart", array[0], array[1]);
+RadarChart(".radarChart2", array[0], array[1]);
 
 
 d3.select("#replay")
@@ -746,7 +757,6 @@ svg.select(".legendLog")
   var colorList = {Reggae: "#e377c2", Electronic: "#ffbb78", Latin: "#8c564b",
   'R&B': "#ce3b69", Pop: "#9467bd",  Country: "#ff7f0e", "Hip-Hop": "#2ca02c",
   Rock: "#17becf", "Alternative": "#bcbd22", Other: "#d62728"};
-
   
 
 colorize = function(colorList) {
