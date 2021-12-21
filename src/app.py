@@ -34,6 +34,7 @@ dash_data = billboard.merge(attributes, "left", on="SongID").drop_duplicates("So
 dash_data.loc[:, "explicit"] = dash_data.explicit.apply(lambda x: "explicit" if x == 1 else "clean")
 dash_data.loc[:, "timesignature"] = dash_data.timesignature.apply(lambda x: pie_parser["timesignature"][x])
 dash_data.loc[:, "key"] = dash_data.key.apply(lambda x: pie_parser["key"][x])
+dash_data.loc[:, "mode"] = dash_data["mode"].apply(lambda x: pie_parser["mode"][x])
 dash_data.loc[:, "genre_super"] = dash_data.genre_super.apply(lambda x: "other" if x == "missing" or x == "empty" else x)
 dash_data = dash_data.rename(columns={"bill_popularity_y": "Chart Points"})
 dash_artists = billboard.merge(attributes, "left", on="SongID").merge(artists.merge(artists_join, "left", on=["artist_id"]), "left", left_on="id_y", right_on="song_id").drop_duplicates(["artist", "song_id"]).drop_duplicates(["artist_id"])
@@ -43,23 +44,13 @@ dash_artists = billboard.merge(attributes, "left", on="SongID").merge(artists.me
 # fig3 = px.pie(dash_data, values="count", names="key", title="Pitch Class of Billboard Songs")
 # fig4 = px.pie(dash_data, values="count", names="genre_super", title="Major Genres of Billboard Songs")
 
-hist = px.histogram(dash_data, x="danceability")
-hist1 = px.histogram(dash_data, x="energy")
-hist2 = px.histogram(dash_data, x="valence")
-hist3 = px.histogram(dash_data, x="liveness")
-hist4 = px.histogram(dash_data, x="speechiness")
-hist5 = px.histogram(dash_data, x="acousticness")
-hist6 = px.histogram(dash_data, x="instrumentalness")
-hist7 = px.histogram(dash_data, x="duration")
-hist8 = px.histogram(dash_data, x="loudness")
-
-hist9 = px.histogram(dash_data, x="popularity")
-hist10 = px.histogram(dash_data, x="Chart Points")
-hist11 = px.histogram(dash_data, x="scaled_popularity")
+# hist9 = px.histogram(dash_data, x="popularity")
+# hist10 = px.histogram(dash_data, x="Chart Points")
+# hist11 = px.histogram(dash_data, x="scaled_popularity")
 
 dash_artists.loc[:, "popularity_y"] = dash_artists.loc[:, "popularity_y"].astype("float")
-hist12 = px.histogram(dash_artists, x="popularity_y", title="Billboard Artist Popularity Distribution")
-hist13 = px.histogram(dash_artists, x="followers", title="Billboard Artist Followers Distribution")
+# hist12 = px.histogram(dash_artists, x="popularity_y", title="Billboard Artist Popularity Distribution")
+# hist13 = px.histogram(dash_artists, x="followers", title="Billboard Artist Followers Distribution")
 
 main_layout = html.Div([
     html.Div([
@@ -77,6 +68,7 @@ main_layout = html.Div([
                 dcc.Slider(id="year_slider", min=int(years[0]), max=int(years[-1]), step=1, included=False, value=1999, marks={y: y for y in years}),
             ], lg=10, md=12),
             dbc.Col(lg=1),
+            dbc.Col(lg=1),
             dbc.Col([
                 html.H1("Spotify Categorical Attributes"),
                 html.Br(),
@@ -85,30 +77,34 @@ main_layout = html.Div([
                 dcc.Graph(figure=empty_fig(), id="key_pie"),
                 dcc.Graph(figure=empty_fig(), id="genreSuper_pie"),
                 dcc.Graph(figure=empty_fig(), id="mode_pie")
-                ], lg=4, style={"textAlign": "center"}),
+                ], lg=10, style={"textAlign": "center"}),
+            dbc.Col(lg=1),
+            dbc.Col(lg=1),
             dbc.Col([
                 html.H1("Spotify Interval Attributes Distribution"),
                 html.Br(),
-                dcc.Graph(figure=hist, id="dance_hist"),
-                dcc.Graph(figure=hist1, id="energy_hist"),
-                dcc.Graph(figure=hist2, id="valence_hist"),
-                dcc.Graph(figure=hist3, id="liveness_hist"),
-                dcc.Graph(figure=hist4, id="speechiness_hist"),
-                dcc.Graph(figure=hist5, id="acousticness_hist"),
-                dcc.Graph(figure=hist6, id="instrumentalness_hist"),
-                dcc.Graph(figure=hist7, id="duration_hist"),
-                dcc.Graph(figure=hist8, id="loudness_hist"),
-            ], lg=7, style={"textAlign": "center"}),
+                dcc.Graph(figure=empty_fig(), id="dance_hist"),
+                dcc.Graph(figure=empty_fig(), id="energy_hist"),
+                dcc.Graph(figure=empty_fig(), id="valence_hist"),
+                dcc.Graph(figure=empty_fig(), id="liveness_hist"),
+                dcc.Graph(figure=empty_fig(), id="speechiness_hist"),
+                dcc.Graph(figure=empty_fig(), id="acousticness_hist"),
+                dcc.Graph(figure=empty_fig(), id="instrumentalness_hist"),
+                dcc.Graph(figure=empty_fig(), id="duration_hist"),
+                dcc.Graph(figure=empty_fig(), id="loudness_hist"),
+            ], lg=10, style={"textAlign": "center"}),
+            dbc.Col(lg=1),
             dbc.Col(lg=1),
             dbc.Col([
                 html.H1("Popularity Then and Now"),
                 html.Br(),
-                dcc.Graph(figure=hist9, id="spot_pop_hist"),
-                dcc.Graph(figure=hist12, id="artist_pop_hist"),
-                dcc.Graph(figure=hist13, id="followers"),
-                dcc.Graph(figure=hist10, id="chart_pop_hist"),
-                dcc.Graph(figure=hist11, id="scaled_pop_hist"),
-                ], lg=11, style={"textAlign": "center"})
+                dcc.Graph(figure=empty_fig(), id="spot_pop_hist"),
+                dcc.Graph(figure=empty_fig(), id="artist_pop_hist"),
+                dcc.Graph(figure=empty_fig(), id="followers"),
+                dcc.Graph(figure=empty_fig(), id="chart_pop_hist"),
+                dcc.Graph(figure=empty_fig(), id="scaled_pop_hist"),
+                ], lg=10, style={"textAlign": "center"}),
+            dbc.Col(lg=1),
             ],
         id="analysis_content"),
         html.Br(),
@@ -153,7 +149,7 @@ app.layout = main_layout
     Output('mode_pie', 'figure'),
     Input('year_slider', 'value')
     )
-def update_cursed_pie(year):
+def update_pies(year):
     if not year:
         raise PreventUpdate
     segment_data = dash_data[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
@@ -165,8 +161,41 @@ def update_cursed_pie(year):
        'reggae': "#7F7F7F"}},
     "mode": {"name": "Modality", "cmap": {"major": "#19D3F3", "minor": "#FF6692"}}}
     figs = []
-    figs.append([px.pie(segment_data, values="count", names=k, color=k, color_discrete_map=v['cmap'], title= f"% of Billboard Songs {v['name']} in {year}") for k, v in categorical_columns.items()])
+    figs.append([px.pie(segment_data, values="count", names=k, color=k, color_discrete_map=v['cmap'], title= f"% of Billboard Songs {v['name']} in {year}").update_layout(uniformtext_minsize=12, uniformtext_mode='hide') for k, v in categorical_columns.items()])
     return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4]
+
+
+@app.callback(
+    Output('dance_hist', 'figure'),
+    Output('energy_hist', 'figure'),
+    Output('valence_hist', 'figure'),
+    Output('liveness_hist', 'figure'),
+    Output('speechiness_hist', 'figure'),
+    Output('acousticness_hist', 'figure'),
+    Output('instrumentalness_hist', 'figure'),
+    Output('duration_hist', 'figure'),
+    Output('loudness_hist', 'figure'),
+    Output('spot_pop_hist', 'figure'),
+    Output('chart_pop_hist', 'figure'),
+    Output('scaled_pop_hist', 'figure'),
+    Output('artist_pop_hist', 'figure'),
+    Output('followers', 'figure'),
+    Input('year_slider', 'value'))
+def update_hists(year):
+    if not year:
+        raise PreventUpdate
+    segment_data = dash_data[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
+    segment_data_a = dash_artists[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
+    figs = []
+    columns = ["danceability", "energy", "valence", "liveness", "speechiness", "acousticness", "instrumentalness", "duration", "loudness", "popularity", "Chart Points", "scaled_popularity"]
+    figs.append([px.histogram(segment_data, x=h) for h in columns])
+
+
+
+    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4], figs[0][5], figs[0][6], figs[0][7], figs[0][8], figs[0][9], figs[0][10], figs[0][11], px.histogram(segment_data_a, x="popularity_y"), px.histogram(segment_data_a, x="followers")
+
+
+
 
 
 
