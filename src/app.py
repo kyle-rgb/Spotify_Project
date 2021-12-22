@@ -6,7 +6,7 @@ from dash import html, dcc
 from dash.dash_table import DataTable
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
-
+from plotly.subplots import make_subplots
 import plotly.graph_objs as go, plotly.express as px, pandas as pd, numpy as np, sqlalchemy as sql
 
 def empty_fig():
@@ -19,38 +19,36 @@ server = app.server
 
 years = [str(x) for x in range(1999, 2020, 1)]
 pie_parser = {"mode": {0: "minor", 1: "major"}, "key": {0:"C", 1:"C# / D-flat", 2:"D", 3:"D# / E-flat", 4:"E", 5:"F", 6:"F# / G-flat", 7: "G", 8:"G# / A-flat", 9:"A", 10:"A# / B-flat", 11:"B"},
-"timesignature": {3: "3/4", 4: "4/4", 5: "5/4", 1: "4/4", 0: "4/4"}}
+"timesignature": {3: "3/4", 4: "4/4", 5: "5/4", 1: "4/4", 0: "4/4", np.nan: "4/4"}}
 
 
 engine = sql.create_engine("sqlite:///./data/music.db")
 with engine.connect() as con:
     billboard = pd.read_sql("SELECT * FROM billboard", con=con, parse_dates="WeekID")
-    attributes = pd.read_sql("SELECT * FROM attributes", con=con, parse_dates="release_date")
+    attributes = pd.read_sql("SELECT * FROM attributes", con=con, parse_dates="release_date").dropna(thresh=14)
     artists = pd.read_sql("SELECT * FROM artists", con=con)
     recommend_join = pd.read_sql("SELECT * FROM recommendation_join", con=con)
     artists_join = pd.read_sql("SELECT * FROM artists_join", con=con)
 
+
+attributes.loc[attributes['timesignature'].isna(), 'timesignature'] = 1
+attributes.loc[:, "explicit"] = attributes.explicit.apply(lambda x: "explicit" if x == 1 else "clean")
+attributes.loc[:, "timesignature"] = attributes.timesignature.apply(lambda x: pie_parser["timesignature"][x])
+attributes.loc[:, "key"] = attributes.key.apply(lambda x: pie_parser["key"][x])
+attributes.loc[:, "mode"] = attributes["mode"].apply(lambda x: pie_parser["mode"][x])
+attributes.loc[:, "genre_super"] = attributes.genre_super.apply(lambda x: "other" if x == "missing" or x == "empty" else x)
 dash_data = billboard.merge(attributes, "left", on="SongID").drop_duplicates("SongID").assign(count = 1).dropna()
-dash_data.loc[:, "explicit"] = dash_data.explicit.apply(lambda x: "explicit" if x == 1 else "clean")
-dash_data.loc[:, "timesignature"] = dash_data.timesignature.apply(lambda x: pie_parser["timesignature"][x])
-dash_data.loc[:, "key"] = dash_data.key.apply(lambda x: pie_parser["key"][x])
-dash_data.loc[:, "mode"] = dash_data["mode"].apply(lambda x: pie_parser["mode"][x])
-dash_data.loc[:, "genre_super"] = dash_data.genre_super.apply(lambda x: "other" if x == "missing" or x == "empty" else x)
+noncharters_data = attributes[lambda x: x.chart == 0.0].assign(count = 1)
+
+
+
+
+
+
+
 dash_data = dash_data.rename(columns={"bill_popularity_y": "Chart Points"})
 dash_artists = billboard.merge(attributes, "left", on="SongID").merge(artists.merge(artists_join, "left", on=["artist_id"]), "left", left_on="id_y", right_on="song_id").drop_duplicates(["artist", "song_id"]).drop_duplicates(["artist_id"])
-
-# fig = px.pie(dash_data, values="count", names="explicit", title= "% of Billboard Songs Explicit")
-# fig2 = px.pie(dash_data, values="count", names="timesignature", title="Time Signatures of Billboard Songs")
-# fig3 = px.pie(dash_data, values="count", names="key", title="Pitch Class of Billboard Songs")
-# fig4 = px.pie(dash_data, values="count", names="genre_super", title="Major Genres of Billboard Songs")
-
-# hist9 = px.histogram(dash_data, x="popularity")
-# hist10 = px.histogram(dash_data, x="Chart Points")
-# hist11 = px.histogram(dash_data, x="scaled_popularity")
-
 dash_artists.loc[:, "popularity_y"] = dash_artists.loc[:, "popularity_y"].astype("float")
-# hist12 = px.histogram(dash_artists, x="popularity_y", title="Billboard Artist Popularity Distribution")
-# hist13 = px.histogram(dash_artists, x="followers", title="Billboard Artist Followers Distribution")
 
 main_layout = html.Div([
     html.Div([
@@ -153,6 +151,7 @@ def update_pies(year):
     if not year:
         raise PreventUpdate
     segment_data = dash_data[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
+    sample_data = noncharters_data[lambda x: (x.release_date >= dt.datetime(year, 1, 1)) &(x.release_date <= dt.datetime(year, 12, 31))]
     categorical_columns = {"explicit": {"name": "Explicit", "cmap": {'clean': "#00CC96", "explicit": "#FD3216"}},
     "timesignature": {"name": "Time Signatures", "cmap": {"4/4": "#EB663B", "3/4": "#AB63FA", "5/4": "#BCBD22"}},
     "key": {"name": "Pitch Class", "cmap": {"C": "#B10DA1", "C# / D-flat": "#1CFFCE", "D": "#F6222E", "D# / E-flat":"#90AD1C", "E": "#F8A19F", "F": "#FEAF16", "F# / G-flat": "#F7E1A0", "G": "#AA0DFE", "G# / A-flat": "#782AB6", "A": "#FA0087", "A# / B-flat": "#1616A7", "B": "#778AAE"}},
@@ -161,8 +160,20 @@ def update_pies(year):
        'reggae': "#7F7F7F"}},
     "mode": {"name": "Modality", "cmap": {"major": "#19D3F3", "minor": "#FF6692"}}}
     figs = []
-    figs.append([px.pie(segment_data, values="count", names=k, color=k, color_discrete_map=v['cmap'], title= f"% of Billboard Songs {v['name']} in {year}").update_layout(uniformtext_minsize=12, uniformtext_mode='hide') for k, v in categorical_columns.items()])
-    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4]
+    for category in categorical_columns.keys():
+        fig = make_subplots(rows=1, cols=2, specs=[[{'type':'domain'}, {'type':'domain'}]])
+        print(segment_data.groupby(category).count().sort_index().reset_index().iloc[:, :2])
+        print(sample_data.groupby(category).count().sort_index().reset_index().iloc[:, :2])
+        fig.add_trace(go.Pie(values=segment_data.groupby(category).count().sort_index().reset_index().year.values, labels=list(segment_data.groupby(category).count().sort_index().index), hole=.4, marker_colors=list(categorical_columns[category]["cmap"].values())), 1, 1)
+        fig.add_trace(go.Pie(values=sample_data.groupby(category).count().sort_index().reset_index().Song.values, labels=list(sample_data.groupby(category).count().sort_index().index), hole=.4), 1, 2)
+        fig.update_layout(title_text=f"{category} % in {year}", template="plotly_dark",
+        annotations=[dict(text='Hot 100', x=0.198, y=0.5, font_size=15, showarrow=False),
+                 dict(text="Non-Charters", x=0.815, y=0.5, font_size=15, showarrow=False)])
+        fig.update_traces(hoverinfo="label+percent+name")
+        figs.append(fig)
+        # .update_layout(template="plotly_dark", uniformtext_minsize=12, uniformtext_mode='hide') , color=category, color_discrete_map=categorical_columns[category]['cmap'],
+
+    return figs[0], figs[1], figs[2], figs[3], figs[4]
 
 
 @app.callback(
@@ -188,11 +199,10 @@ def update_hists(year):
     segment_data_a = dash_artists[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
     figs = []
     columns = ["danceability", "energy", "valence", "liveness", "speechiness", "acousticness", "instrumentalness", "duration", "loudness", "popularity", "Chart Points", "scaled_popularity"]
-    figs.append([px.histogram(segment_data, x=h) for h in columns])
-
-
-
-    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4], figs[0][5], figs[0][6], figs[0][7], figs[0][8], figs[0][9], figs[0][10], figs[0][11], px.histogram(segment_data_a, x="popularity_y"), px.histogram(segment_data_a, x="followers")
+    figs.append([px.histogram(segment_data, x=h).update_layout(template="plotly_dark") for h in columns])
+    figs[0].append(px.histogram(segment_data_a, x="popularity_y").update_layout(template="plotly_dark"))
+    figs[0].append(px.histogram(segment_data_a, x="followers").update_layout(template="plotly_dark"))
+    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4], figs[0][5], figs[0][6], figs[0][7], figs[0][8], figs[0][9], figs[0][10], figs[0][11], figs[0][12], figs[0][13]
 
 
 
