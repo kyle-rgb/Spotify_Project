@@ -13,8 +13,8 @@ def empty_fig():
     fig = go.Figure()
     return fig
 
-app = dash.Dash(__name__, meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0, maximum-scale=4, minimum-scale=0.5,'}],
-external_stylesheets=[dbc.themes.DARKLY])
+app = dash.Dash(__name__, meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0, maximum-scale=4, minimum-scale=0.5,'},],
+external_stylesheets=["static/boostrap.min.css"])
 server = app.server
 
 years = [str(x) for x in range(1999, 2020, 1)]
@@ -42,10 +42,7 @@ noncharters_data = attributes[lambda x: x.chart == 0.0].assign(count = 1)
 
 
 
-
-
-
-
+sample_artists = attributes.merge(artists.merge(artists_join, "left", on=["artist_id"]), "left", left_on="id_y", right_on="song_id").drop_duplicates(["artist", "song_id"]).drop_duplicates(["artist_id"])
 dash_data = dash_data.rename(columns={"bill_popularity_y": "Chart Points"})
 dash_artists = billboard.merge(attributes, "left", on="SongID").merge(artists.merge(artists_join, "left", on=["artist_id"]), "left", left_on="id_y", right_on="song_id").drop_duplicates(["artist", "song_id"]).drop_duplicates(["artist_id"])
 dash_artists.loc[:, "popularity_y"] = dash_artists.loc[:, "popularity_y"].astype("float")
@@ -90,6 +87,7 @@ main_layout = html.Div([
                 dcc.Graph(figure=empty_fig(), id="instrumentalness_hist"),
                 dcc.Graph(figure=empty_fig(), id="duration_hist"),
                 dcc.Graph(figure=empty_fig(), id="loudness_hist"),
+                dcc.Graph(figure=empty_fig(), id="tempo_hist"),
             ], lg=10, style={"textAlign": "center"}),
             dbc.Col(lg=1),
             dbc.Col(lg=1),
@@ -97,10 +95,10 @@ main_layout = html.Div([
                 html.H1("Popularity Then and Now"),
                 html.Br(),
                 dcc.Graph(figure=empty_fig(), id="spot_pop_hist"),
-                dcc.Graph(figure=empty_fig(), id="artist_pop_hist"),
-                dcc.Graph(figure=empty_fig(), id="followers"),
                 dcc.Graph(figure=empty_fig(), id="chart_pop_hist"),
                 dcc.Graph(figure=empty_fig(), id="scaled_pop_hist"),
+                dcc.Graph(figure=empty_fig(), id="artist_pop_hist"),
+                dcc.Graph(figure=empty_fig(), id="followers"),
                 ], lg=10, style={"textAlign": "center"}),
             dbc.Col(lg=1),
             ],
@@ -162,9 +160,7 @@ def update_pies(year):
     figs = []
     for category in categorical_columns.keys():
         fig = make_subplots(rows=1, cols=2, specs=[[{'type':'domain'}, {'type':'domain'}]])
-        print(segment_data.groupby(category).count().sort_index().reset_index().iloc[:, :2])
-        print(sample_data.groupby(category).count().sort_index().reset_index().iloc[:, :2])
-        fig.add_trace(go.Pie(values=segment_data.groupby(category).count().sort_index().reset_index().year.values, labels=list(segment_data.groupby(category).count().sort_index().index), hole=.4, marker_colors=list(categorical_columns[category]["cmap"].values())), 1, 1)
+        fig.add_trace(go.Pie(values=segment_data.groupby(category).count().sort_index().reset_index().year.values, labels=list(segment_data.groupby(category).count().sort_index().index), hole=.4, marker_colors=[categorical_columns[category]["cmap"][l] for l in segment_data.groupby(category).count().sort_index().index]), 1, 1)
         fig.add_trace(go.Pie(values=sample_data.groupby(category).count().sort_index().reset_index().Song.values, labels=list(sample_data.groupby(category).count().sort_index().index), hole=.4), 1, 2)
         fig.update_layout(title_text=f"{category} % in {year}", template="plotly_dark",
         annotations=[dict(text='Hot 100', x=0.198, y=0.5, font_size=15, showarrow=False),
@@ -186,6 +182,7 @@ def update_pies(year):
     Output('instrumentalness_hist', 'figure'),
     Output('duration_hist', 'figure'),
     Output('loudness_hist', 'figure'),
+    Output('tempo_hist', 'figure'),
     Output('spot_pop_hist', 'figure'),
     Output('chart_pop_hist', 'figure'),
     Output('scaled_pop_hist', 'figure'),
@@ -195,14 +192,29 @@ def update_pies(year):
 def update_hists(year):
     if not year:
         raise PreventUpdate
+    columns = ["chart", "danceability", "energy", "valence", "liveness", "speechiness", "acousticness", "instrumentalness", "duration", "loudness", "tempo","popularity"]
     segment_data = dash_data[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
-    segment_data_a = dash_artists[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
+    avg_data = dash_data[lambda x: ~((x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31)))].sample(n=segment_data.shape[0])
+
+    segment_data_a = sample_artists[lambda x: (x.release_date >= dt.datetime(year, 1, 1)) & (x.release_date <= dt.datetime(year, 12, 31))]    
+    segment_data_b = dash_artists[lambda x: (x.WeekID >= dt.datetime(year, 1, 1)) &( x.WeekID <= dt.datetime(year, 12, 31))]
+    segment_data_c = pd.concat([segment_data_b.loc[:, ["followers", "popularity_y", "chart"]].fillna(1.0), segment_data_a.loc[:, ["followers", "popularity_y", "chart"]]], axis=0, ignore_index=True)
+
+    segment_other = noncharters_data[lambda x: (x.release_date >= dt.datetime(year, 1, 1)) & (x.release_date <= dt.datetime(year, 12, 31))]
+    full_segment = pd.concat([segment_other.loc[:, columns], segment_data.loc[:, columns]], axis=0, ignore_index=True)
+    averages_of_charters = pd.concat([segment_data.assign(chart_year = lambda x: 1.0), avg_data.assign(chart_year = lambda x: 0.0)], axis=0, ignore_index=True)
+
+
+
     figs = []
-    columns = ["danceability", "energy", "valence", "liveness", "speechiness", "acousticness", "instrumentalness", "duration", "loudness", "popularity", "Chart Points", "scaled_popularity"]
-    figs.append([px.histogram(segment_data, x=h).update_layout(template="plotly_dark") for h in columns])
-    figs[0].append(px.histogram(segment_data_a, x="popularity_y").update_layout(template="plotly_dark"))
-    figs[0].append(px.histogram(segment_data_a, x="followers").update_layout(template="plotly_dark"))
-    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4], figs[0][5], figs[0][6], figs[0][7], figs[0][8], figs[0][9], figs[0][10], figs[0][11], figs[0][12], figs[0][13]
+    figs.append([px.histogram(full_segment, x=h, color="chart").update_layout(template="plotly_dark") for h in columns if h!="chart"])
+
+
+    figs[0].append(px.histogram(averages_of_charters, x="Chart Points", color="chart_year").update_layout(template="plotly_dark"))
+    figs[0].append(px.histogram(averages_of_charters, x="scaled_popularity", color="chart_year").update_layout(template="plotly_dark"))
+    figs[0].append(px.histogram(segment_data_c, x="popularity_y", color="chart").update_layout(template="plotly_dark"))
+    figs[0].append(px.histogram(segment_data_c, x="followers", color="chart").update_layout(template="plotly_dark"))
+    return figs[0][0], figs[0][1], figs[0][2], figs[0][3], figs[0][4], figs[0][5], figs[0][6], figs[0][7], figs[0][8], figs[0][9], figs[0][10], figs[0][11], figs[0][12], figs[0][13], figs[0][14]
 
 
 
