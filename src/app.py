@@ -63,7 +63,7 @@ main_layout = html.Div([
                 dcc.Slider(id="year_slider", min=int(years[0]), max=int(years[-1]), step=1, included=False, value=1999, marks={y: y for y in years}),
             ], lg=10, md=12),
             dbc.Col(lg=1),
-            dbc.Col(lg=1),
+            dbc.Col(lg=2),
             dbc.Col([
                 html.H1("Spotify Categorical Attributes"),
                 html.Br(),
@@ -72,9 +72,9 @@ main_layout = html.Div([
                 dcc.Graph(figure=empty_fig(), id="key_pie"),
                 dcc.Graph(figure=empty_fig(), id="genreSuper_pie"),
                 dcc.Graph(figure=empty_fig(), id="mode_pie")
-                ], lg=10, style={"textAlign": "center"}),
-            dbc.Col(lg=1),
-            dbc.Col(lg=1),
+                ], lg=8, style={"textAlign": "center"}),
+            dbc.Col(lg=2),
+            dbc.Col(lg=2),
             dbc.Col([
                 html.H1("Spotify Interval Attributes Distribution"),
                 html.Br(),
@@ -88,9 +88,9 @@ main_layout = html.Div([
                 dcc.Graph(figure=empty_fig(), id="duration_hist"),
                 dcc.Graph(figure=empty_fig(), id="loudness_hist"),
                 dcc.Graph(figure=empty_fig(), id="tempo_hist"),
-            ], lg=10, style={"textAlign": "center"}),
-            dbc.Col(lg=1),
-            dbc.Col(lg=1),
+            ], lg=8, style={"textAlign": "center"}),
+            dbc.Col(lg=2),
+            dbc.Col(lg=2),
             dbc.Col([
                 html.H1("Popularity Then and Now"),
                 html.Br(),
@@ -99,8 +99,8 @@ main_layout = html.Div([
                 dcc.Graph(figure=empty_fig(), id="scaled_pop_hist"),
                 dcc.Graph(figure=empty_fig(), id="artist_pop_hist"),
                 dcc.Graph(figure=empty_fig(), id="followers"),
-                ], lg=10, style={"textAlign": "center"}),
-            dbc.Col(lg=1),
+                ], lg=8, style={"textAlign": "center"}),
+            dbc.Col(lg=2),
             ],
         id="analysis_content"),
         html.Br(),
@@ -164,7 +164,7 @@ def update_pies(year):
         fig.add_trace(go.Pie(values=sample_data.groupby(category).count().sort_index().reset_index().Song.values, labels=list(sample_data.groupby(category).count().sort_index().index), hole=.4), 1, 2)
         fig.update_layout(title_text=f"{category} % in {year}", template="plotly_dark",
         annotations=[dict(text='Hot 100', x=0.198, y=0.5, font_size=15, showarrow=False),
-                 dict(text="Non-Charters", x=0.815, y=0.5, font_size=15, showarrow=False)])
+                 dict(text="Non-Charters", x=0.8253, y=0.5, font_size=15, showarrow=False)])
         fig.update_traces(hoverinfo="label+percent+name")
         figs.append(fig)
         # .update_layout(template="plotly_dark", uniformtext_minsize=12, uniformtext_mode='hide') , color=category, color_discrete_map=categorical_columns[category]['cmap'],
