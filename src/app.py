@@ -111,7 +111,7 @@ main_layout = html.Div([
                     dbc.Tab([
                         html.Ul([
                             html.Br(),
-                            html.Li('Years Analyzed: 20', ),
+                            html.Li('Years Analyzed: 21', ),
                             html.Li('Analysis Coverage: Jan 1999 - Dec 2019'),
                             html.Li('Update Frequency: Weekly'),
                             html.Li('Spotify Attributes Last Pulled: Dec 6th 2021'),
